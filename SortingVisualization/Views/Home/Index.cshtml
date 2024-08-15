@@ -1,0 +1,255 @@
+﻿@{
+    ViewData["Title"] = "Sorting Visualization";
+}
+
+
+<h1>@ViewData["Title"]</h1>
+<div id="mainContent">
+    <div id="controls">
+        <select id="algorithmSelect">
+            <option value="bubbleSort">Bubble Sort</option>
+            <option value="selectionSort">Selection Sort</option>
+            <option value="insertionSort">Insertion Sort</option>
+            <option value="quickSort">Quick Sort</option>
+            <option value="mergeSort">Merge Sort</option>
+            <option value="heapSort">Heap Sort</option>
+        </select>
+        <select id="arraySizeSelect">
+            <option value="10">10 Elements</option>
+            <option value="20">20 Elements</option>
+            <option value="50">50 Elements</option>
+        </select>
+        <button id="startSort">Start Sorting</button>
+        <button id="resetArray">Reset Array</button>
+    </div>
+    <canvas id="sortCanvas" width="800" height="400"></canvas>
+    <div id="algorithmInfo">
+        <h2>Algorithm Information</h2>
+        <p id="algorithmDescription">Select an algorithm to see its description and behavior here.</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('sortCanvas');
+    const ctx = canvas.getContext('2d');
+    let array = generateRandomArray(10);
+
+    function generateRandomArray(size) {
+        return Array.from({ length: size }, () => Math.floor(Math.random() * 100) + 1);
+    }
+
+    function drawArray(arr) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = canvas.width / arr.length;
+        for (let i = 0; i < arr.length; i++) {
+            const height = arr[i] * 3;  // Scale height for better visualization
+            ctx.fillStyle = '#007bff';
+            ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 2, height);
+        }
+    }
+
+    async function bubbleSort(arr) {
+        const description = `Bubble Sort is a simple comparison-based sorting algorithm.
+                It repeatedly steps through the list, compares adjacent elements,
+                and swaps them if they are in the wrong order.
+                The pass through the list is repeated until the list is sorted.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        let len = arr.length;
+        for (let i = 0; i < len; i++) {
+            for (let j = 0; j < len - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                    drawArray(arr);
+                    await new Promise(r => setTimeout(r, 50));
+                }
+            }
+        }
+    }
+
+    async function selectionSort(arr) {
+        const description = `Selection Sort is an in-place comparison sorting algorithm.
+                The algorithm divides the input list into two parts:
+                the sublist of items already sorted, which is built up from left to right at the front (left) of the list,
+                and the sublist of items remaining to be sorted that occupy the rest of the list.
+                The algorithm proceeds by finding the smallest element in the unsorted sublist, exchanging it with the leftmost unsorted element (putting it in sorted order),
+                and moving the sublist boundaries one element to the right.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        let len = arr.length;
+        for (let i = 0; i < len; i++) {
+            let minIdx = i;
+            for (let j = i + 1; j < len; j++) {
+                if (arr[j] < arr[minIdx]) {
+                    minIdx = j;
+                }
+            }
+            if (minIdx !== i) {
+                [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+                drawArray(arr);
+                await new Promise(r => setTimeout(r, 50));
+            }
+        }
+    }
+
+    async function insertionSort(arr) {
+        const description = `Insertion Sort is a simple sorting algorithm that builds the final sorted array (or list) one item at a time.
+                It is much less efficient on large lists than more advanced algorithms such as quicksort, heapsort, or merge sort.
+                The algorithm proceeds by taking one element at a time, finding the location it belongs to in the sorted list,
+                and inserting it there, thus growing the sorted list.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        let len = arr.length;
+        for (let i = 1; i < len; i++) {
+            let key = arr[i];
+            let j = i - 1;
+            while (j >= 0 && arr[j] > key) {
+                arr[j + 1] = arr[j];
+                j--;
+                drawArray(arr);
+                await new Promise(r => setTimeout(r, 50));
+            }
+            arr[j + 1] = key;
+            drawArray(arr);
+            await new Promise(r => setTimeout(r, 50));
+        }
+    }
+
+    // Quick Sort
+    async function quickSort(arr, left = 0, right = arr.length - 1) {
+        const description = `Quick Sort is an efficient, in-place sorting algorithm that works by partitioning an array into two parts,
+        then sorting the parts independently. It uses a divide-and-conquer approach.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        if (left < right) {
+            let pivotIndex = await partition(arr, left, right);
+            await Promise.all([quickSort(arr, left, pivotIndex - 1), quickSort(arr, pivotIndex + 1, right)]);
+        }
+    }
+
+    async function partition(arr, left, right) {
+        let pivot = arr[right];
+        let i = left;
+        for (let j = left; j < right; j++) {
+            if (arr[j] < pivot) {
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+                i++;
+                drawArray(arr);
+                await new Promise(r => setTimeout(r, 50));
+            }
+        }
+        [arr[i], arr[right]] = [arr[right], arr[i]];
+        drawArray(arr);
+        await new Promise(r => setTimeout(r, 50));
+        return i;
+    }
+
+    // Merge Sort
+    async function mergeSort(arr) {
+        const description = `Merge Sort is a divide-and-conquer algorithm that divides the array into halves,
+        recursively sorts them, and then merges the sorted halves. It is very efficient for large datasets.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        if (arr.length < 2) return arr;
+        const mid = Math.floor(arr.length / 2);
+        const left = await mergeSort(arr.slice(0, mid));
+        const right = await mergeSort(arr.slice(mid));
+
+        return await merge(left, right, arr);
+    }
+
+    async function merge(left, right, arr) {
+        let i = 0;
+        while (left.length && right.length) {
+            if (left[0] <= right[0]) {
+                arr[i++] = left.shift();
+            } else {
+                arr[i++] = right.shift();
+            }
+            drawArray(arr);
+            await new Promise(r => setTimeout(r, 50));
+        }
+        while (left.length) arr[i++] = left.shift();
+        while (right.length) arr[i++] = right.shift();
+        drawArray(arr);
+        return arr;
+    }
+
+    // Heap Sort
+    async function heapSort(arr) {
+        const description = `Heap Sort is a comparison-based sorting algorithm that uses a binary heap data structure.
+        It divides the array into a sorted and an unsorted region, and iteratively shrinks the unsorted region by extracting
+        the largest element from the heap and placing it at the end of the unsorted region.`;
+        document.getElementById('algorithmDescription').innerText = description;
+
+        await buildMaxHeap(arr);
+        for (let end = arr.length - 1; end > 0; end--) {
+            [arr[0], arr[end]] = [arr[end], arr[0]];
+            drawArray(arr);
+            await new Promise(r => setTimeout(r, 50));
+            await siftDown(arr, 0, end);
+        }
+    }
+
+    async function buildMaxHeap(arr) {
+        let start = Math.floor(arr.length / 2 - 1);
+        for (let i = start; i >= 0; i--) {
+            await siftDown(arr, i, arr.length);
+        }
+    }
+
+    async function siftDown(arr, start, end) {
+        let root = start;
+        while (root * 2 + 1 < end) {
+            let child = root * 2 + 1;
+            let swap = root;
+            if (arr[swap] < arr[child]) {
+                swap = child;
+            }
+            if (child + 1 < end && arr[swap] < arr[child + 1]) {
+                swap = child + 1;
+            }
+            if (swap === root) {
+                return;
+            } else {
+                [arr[root], arr[swap]] = [arr[swap], arr[root]];
+                drawArray(arr);
+                await new Promise(r => setTimeout(r, 50));
+                root = swap;
+            }
+        }
+    }
+
+
+    document.getElementById('startSort').addEventListener('click', () => {
+        const selectedAlgorithm = document.getElementById('algorithmSelect').value;
+        if (selectedAlgorithm === 'bubbleSort') {
+            bubbleSort(array);
+        } else if (selectedAlgorithm === 'selectionSort') {
+            selectionSort(array);
+        } else if (selectedAlgorithm === 'insertionSort') {
+            insertionSort(array);
+        } else if (selectedAlgorithm === 'quickSort') {
+            quickSort(array);
+        } else if (selectedAlgorithm === 'mergeSort') {
+            mergeSort(array).then(sorted => array = sorted); // Merge sort returns a sorted array
+        } else if (selectedAlgorithm === 'heapSort') {
+            heapSort(array);
+        }
+    });
+
+
+    document.getElementById('resetArray').addEventListener('click', () => {
+        const arraySize = parseInt(document.getElementById('arraySizeSelect').value, 10);
+        array = generateRandomArray(arraySize);
+        drawArray(array);
+    });
+
+    document.getElementById('arraySizeSelect').addEventListener('change', () => {
+        const arraySize = parseInt(document.getElementById('arraySizeSelect').value, 10);
+        array = generateRandomArray(arraySize);
+        drawArray(array);
+    });
+
+    drawArray(array); // Initial draw
+</script>
